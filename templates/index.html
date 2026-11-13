@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KMIP Test Client — CipherTrust Manager</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --line:#d9dde3; --text:#1c2430;
+          --muted:#5b6675; --accent:#1a5fb4; --ok:#1a7f37; --err:#b3261e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { background:var(--accent); color:#fff; padding:16px 24px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .header-copy { flex:1; }
+  header a { color:#fff; text-decoration:none; }
+  body { padding-bottom:240px; }
+  .result-panel { position:fixed; bottom:0; left:0; right:0; z-index:10;
+    background:var(--card); border-top:1px solid var(--line); padding:10px 16px;
+    box-shadow:0 -3px 12px #0001; }
+  .result-inner { max-width:948px; margin:auto; }
+  .result-panel h2 { margin-bottom:6px; }
+  .result-panel pre { height:160px; max-height:28vh; }
+  header h1 { margin:0; font-size:18px; font-weight:600; }
+  header p { margin:4px 0 0; opacity:.85; font-size:13px; }
+  main { max-width:980px; margin:20px auto; padding:0 16px; display:grid;
+         gap:16px; }
+  section { background:var(--card); border:1px solid var(--line);
+            border-radius:10px; padding:16px 18px; }
+  h2 { margin:0 0 12px; font-size:15px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+          gap:10px 14px; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px;
+          color:var(--muted); }
+  input, select { padding:7px 9px; border:1px solid var(--line);
+                  border-radius:6px; font:inherit; color:var(--text); }
+  input[type=checkbox] { width:auto; }
+  .check { flex-direction:row; align-items:center; gap:8px; color:var(--text); }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button { padding:8px 13px; border:1px solid var(--accent); border-radius:6px;
+           background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  button.secondary { background:#fff; color:var(--accent); }
+  button.danger { background:#fff; color:var(--err); border-color:var(--err); }
+  pre { margin:0; padding:12px; background:#0f1720; color:#d7e2ee;
+        border-radius:8px; overflow:auto; max-height:420px; font-size:12.5px;
+        white-space:pre-wrap; }
+  pre.err { border-left:4px solid var(--err); }
+  pre.ok { border-left:4px solid var(--ok); }
+  .hint { color:var(--muted); font-size:12px; margin-top:6px; }
+
+  #kmip-form { display:grid; gap:16px; }
+  .intro { margin:0 0 16px; color:var(--muted); }
+  .file-card { border:1px solid var(--line); border-radius:8px; padding:14px; min-width:0; }
+  .file-card h3 { margin:0 0 6px; font-size:14px; }
+  .file-card p { min-height:38px; }
+  .file-card input { width:100%; font-size:12px; }
+  .file-card select { width:100%; }
+  .file-card button { margin-top:10px; }
+  details { margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
+  summary { cursor:pointer; color:var(--accent); font-weight:600; }
+  details .grid { margin-top:12px; }
+  textarea { width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; }
+  .grid > label { min-width:0; }
+  input, select { max-width:100%; }
+  @media (max-width:600px) { header { padding:14px 16px; } .result-panel pre { height:110px; } body { padding-bottom:190px; } }
+  .result-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+  .result-heading h2 { margin:0; }
+  .copy-actions { display:flex; align-items:center; gap:10px; }
+  #copy-status { font-size:12px; color:var(--muted); }
+  #copy-ciphertext { padding:5px 10px; }
+  .app-version { display:inline-block; margin-left:8px; font-size:11px; font-weight:400; opacity:.8; white-space:nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-copy">
+  <h1>KMIP Test Client — CipherTrust Manager <span class="app-version">v{{ app_version }}</span></h1>
+  <p>Prepara i certificati, collega il server ed esegui i test KMIP.</p>
+    <a href="/readme" style="color:#fff; text-decoration:underline; margin-left:auto;">Guida</a>
+  </div>
+  <button type="submit" form="kmip-form" name="op" value="reset_certs" class="danger"
+    title="Cancella certificati, chiavi, CSR e CA nella cartella certs/"
+    onclick="return confirm('Cancellare tutti i certificati e le chiavi?')">Reset client</button>
+</header>
+<main>
+<form id="kmip-form" method="post" enctype="multipart/form-data">
+  <section>
+    <h2>1. Certificati e chiave del client</h2>
+    <p class="hint">Cartella dei certificati: <code>{{ certs_directory }}</code></p>
+    <p class="intro">Per ogni voce scegli un file già disponibile oppure caricalo dal tuo computer. I file caricati vengono selezionati automaticamente. Usa file in formato PEM.</p>
+    <div class="grid">
+      {% for field, title_key, desc_key, upload, operation in [
+        ('ca', 'CA del server', 'Certificato della CA che firma il certificato del server CTM.', 'ca_file', 'upload_ca_cert'),
+        ('cert', 'Certificato del client', 'Certificato con cui questo client si presenta a CTM.', 'client_cert_file', 'upload_client_cert'),
+        ('key', 'Chiave privata del client', 'Deve corrispondere al certificato del client scelto qui accanto.', 'client_key_file', 'upload_client_key')
+      ] %}
+      <div class="file-card">
+        <h3>{{ title_key }}</h3>
+        <p class="hint">{{ desc_key }}</p>
+        <label>File da usare
+          <select name="{{ field }}">
+            <option value="">Seleziona un file…</option>
+            {% for path in cert_files[field] %}
+            <option value="{{ path }}" {% if selected_files[field] == path %}selected{% endif %}>{{ path|filename }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        {% if not cert_files[field] %}<p class="hint">Nessun file disponibile. Caricane uno qui sotto.</p>{% endif %}
+        <label style="margin-top:12px">Carica dal computer
+          <input type="file" name="{{ upload }}" accept=".pem,.crt,.cert,.cer,.key">
+        </label>
+        <button type="submit" name="op" value="{{ operation }}" class="secondary">Carica {{ title_key|lower }}</button>
+      </div>
+      {% endfor %}
+    </div>
+  <details>
+    <summary>Non hai un certificato client? Genera una richiesta di firma (CSR)</summary>
+    <p class="hint">Genera la richiesta, falla firmare su CTM e carica qui il certificato ottenuto. La chiave privata viene creata automaticamente.</p>
+    <div class="grid">
+      <label>Common Name (CN)
+        <input name="csr_cn" value="{{ csr_cn }}" placeholder="kmipclient">
+      </label>
+    </div>
+    <div class="actions">
+      {% if certs_ready %}
+      <button type="submit" name="op" value="generate_csr" class="secondary">Genera CSR</button>
+      {% else %}
+      <span style="color:var(--muted); font-size:12px;">Per generare una nuova identità, usa prima «Reset client» in alto a destra. Il reset elimina anche la CA caricata.</span>
+      {% endif %}
+    </div>
+    <p class="hint">La chiave privata viene salvata sul computer. Copia la CSR dal riquadro Risultato e falla firmare su CTM.</p>
+  </details>
+
+  <details>
+    <summary>In alternativa, incolla il certificato client in formato PEM</summary>
+    <div class="grid">
+      <label>Certificato PEM (firmato da CTM)
+        <textarea name="cert_pem" rows="6" placeholder="Incolla qui il certificato firmato…">{{ cert_pem }}</textarea>
+      </label>
+    </div>
+    <div class="actions">
+      <button type="submit" name="op" value="import_cert" class="secondary">Importa certificato</button>
+    </div>
+    <p class="hint">Incolla il certificato PEM firmato da CTM. Viene salvato come certs/client.crt e usato automaticamente per le operazioni KMIP.</p>
+  </details>
+
+  </section>
+  <section>
+    <h2>2. Connessione a CipherTrust Manager</h2>
+    <p class="intro">Inserisci l'indirizzo del server, poi verifica la connessione.</p>
+    <div class="grid">
+      <label>Indirizzo del server CTM
+        <input name="host" value="{{ host }}" placeholder="192.168.122.10">
+      </label>
+      <label>Porta
+        <input name="port" value="{{ port }}">
+      </label>
+      <label>Versione KMIP
+        <select name="kmip_version">
+          {% for v in ['1.0','1.1','1.2','1.3','1.4','2.0'] %}
+          <option value="{{ v }}" {% if kmip_version == v %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Utente KMIP (opzionale)
+        <input name="username" value="{{ username }}" placeholder="CN del certificato">
+      </label>
+      <label>Password (opzionale)
+        <input name="password" type="password" autocomplete="off"
+          placeholder="{{ 'Password memorizzata' if password_saved else 'Inserisci la password' }}">
+        <span class="hint">{% if password_saved %}Password memorizzata per questo server e utente. Lascia vuoto per riutilizzarla oppure scrivine una nuova per sostituirla.{% else %}La password verrà ricordata fino al riavvio del client. Non serve reinserirla a ogni operazione.{% endif %}</span>
+      </label>
+    </div>
+    <div class="actions">
+      <label class="check"><input type="checkbox" name="insecure"
+        {% if insecure %}checked{% endif %}> Non verificare il certificato server (solo test)</label>
+    </div>
+    <div class="actions">
+      <button type="submit" name="op" value="ping" class="secondary">Verifica connessione TLS</button>
+      {% if password_saved %}<button type="submit" name="op" value="forget_password" class="secondary">Dimentica password</button>{% endif %}
+    </div>
+  </section>
+  <section>
+    <h2>3. Test completo</h2>
+    <p class="intro">Crea e attiva una chiave AES-256, la cerca e la legge, poi verifica cifratura e decifratura. La chiave resta su CTM se non scegli di eliminarla.</p>
+    <label class="check"><input type="checkbox" name="destroy" {% if destroy %}checked{% endif %}> Revoca e distruggi la chiave alla fine del test</label>
+    <div class="actions"><button type="submit" name="op" value="demo">Avvia test completo</button></div>
+    <p class="hint">Il nome della chiave è quello indicato sotto oppure viene generato automaticamente.</p>
+  </section>
+  <section>
+    <h2>4. Operazioni singole</h2>
+    <p class="intro">Usa queste operazioni per prove mirate. L'identificativo della chiave viene riutilizzato dopo una creazione o una ricerca.</p>
+    <div class="grid">
+      <label>Nome della chiave
+        <input name="name" value="{{ name }}" placeholder="chiave-test">
+      </label>
+      <label>Identificativo della chiave (UID)
+        <input name="uid" value="{{ uid }}" placeholder="1">
+      </label>
+      <label>Algoritmo
+        <select name="algorithm">
+          {% for a in ['AES','TDES','HMAC_SHA256','HMAC_SHA384','HMAC_SHA512'] %}
+          <option value="{{ a }}" {% if algorithm == a %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Lunghezza (bit)
+        <input name="length" value="{{ length }}">
+      </label>
+      <label>Dati da cifrare
+        <input name="data" value="{{ data }}" placeholder="testo">
+      </label>
+      <label>Dati esadecimali da decifrare
+        <input name="data_hex" value="{{ data_hex }}" placeholder="a1b2c3…">
+      </label>
+      <label>Motivo revoca
+        <select name="reason">
+          {% for r in ['CESSATION_OF_OPERATION','KEY_COMPROMISE','CA_COMPROMISE','AFFILIATION_CHANGED','SUPERSEDED','PRIVILEGE_WITHDRAWN'] %}
+          <option value="{{ r }}" {% if reason == r %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="actions">
+      <button type="submit" name="op" value="create">Crea chiave</button>
+      <button type="submit" name="op" value="activate" class="secondary">Attiva chiave</button>
+      <button type="submit" name="op" value="locate" class="secondary">Cerca chiavi</button>
+      <button type="submit" name="op" value="get" class="secondary">Leggi chiave</button>
+      <button type="submit" name="op" value="encrypt" class="secondary">Cifra dati</button>
+      <button type="submit" name="op" value="decrypt" class="secondary">Decifra dati</button>
+      <button type="submit" name="op" value="revoke" class="danger">Revoca chiave</button>
+      <button type="submit" name="op" value="destroy" class="danger">Distruggi chiave</button>
+    </div>
+    <p class="hint">Per creare una chiave indica il nome. Dopo la creazione premi Attiva chiave prima di cifrare. Per leggerla, cifrare, decifrare, revocarla o distruggerla indica l'identificativo (UID). Il materiale delle chiavi viene mostrato: usare solo in laboratorio.</p>
+  </section>
+
+</form>
+</main>
+<aside class="result-panel" aria-label="Esiti delle operazioni">
+  <div class="result-inner">
+    <div class="result-heading">
+      <h2>Risultato</h2>
+      {% if ok and result and result.startswith('ciphertext: ') %}
+      <div class="copy-actions">
+        <span id="copy-status" role="status" aria-live="polite"></span>
+        <button type="button" id="copy-ciphertext" class="secondary"
+          data-ciphertext="{{ result.splitlines()[0].split(':', 1)[1].strip() }}">Copia ciphertext</button>
+      </div>
+      {% endif %}
+    </div>
+    <pre role="status" class="{{ ('ok' if ok else 'err') if result else '' }}">{{ result or "In attesa di un’operazione." }}</pre>
+  </div>
+</aside>
+<script>
+const copyButton = document.getElementById('copy-ciphertext');
+if (copyButton) {
+  copyButton.addEventListener('click', async () => {
+    const ciphertext = copyButton.dataset.ciphertext;
+    const status = document.getElementById('copy-status');
+    let copied = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(ciphertext);
+        copied = true;
+      } catch (_) { /* Prova anche il metodo compatibile con la finestra desktop. */ }
+    }
+    if (!copied) {
+      const field = document.createElement('textarea');
+      field.value = ciphertext;
+      field.style.position = 'fixed';
+      field.style.left = '-9999px';
+      document.body.appendChild(field);
+      field.focus();
+      field.select();
+      try { copied = document.execCommand('copy'); } catch (_) {}
+      field.remove();
+      copyButton.focus();
+    }
+    status.textContent = copied ? 'Copiato negli appunti' : 'Copia non riuscita: seleziona il testo e premi Ctrl+C.';
+  });
+}
+const resultPanel = document.querySelector('.result-panel');
+if (resultPanel && typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(() => {
+    document.body.style.paddingBottom = (resultPanel.offsetHeight + 24) + 'px';
+  }).observe(resultPanel);
+}
+</script>
+</body>
+</html>

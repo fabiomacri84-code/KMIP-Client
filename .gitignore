@@ -1,0 +1,22 @@
+certs/
+selftest-certs/
+__pycache__/
+*.pyc
+.venv/
+build/
+dist/
+*.log
+
+# Identità, credenziali e impostazioni locali non vanno nel repository.
+*.key
+*.pem
+*.crt
+*.cer
+*.cert
+*.csr
+*.p12
+*.pfx
+.env
+.env.*
+settings.json
+.DS_Store

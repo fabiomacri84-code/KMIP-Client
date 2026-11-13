@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="tile" x1="70" y1="30" x2="450" y2="490" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#203f69"/><stop offset=".5" stop-color="#122841"/><stop offset="1" stop-color="#091a2e"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="160" y1="92" x2="340" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9ce8f8"/><stop offset=".45" stop-color="#52b8dc"/><stop offset="1" stop-color="#287eae"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="193" y1="190" x2="332" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff0bd"/><stop offset=".5" stop-color="#ffd47d"/><stop offset="1" stop-color="#e8a844"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="100" y1="30" x2="430" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7da6d0" stop-opacity=".55"/><stop offset="1" stop-color="#405d7c" stop-opacity=".2"/>
+    </linearGradient>
+  </defs>
+  <rect x="22" y="28" width="468" height="468" rx="112" fill="#07111f" opacity=".2"/>
+  <rect x="22" y="16" width="468" height="468" rx="112" fill="url(#tile)"/>
+  <rect x="23" y="17" width="466" height="466" rx="111" fill="none" stroke="url(#edge)" stroke-width="2"/>
+  <path d="M256 91c44 26 82 38 126 43v110c0 85-48 142-126 184-78-42-126-99-126-184V134c44-5 82-17 126-43Z" fill="#07111f" opacity=".32" transform="translate(0 8)"/>
+  <path d="M256 83c44 26 82 38 126 43v110c0 85-48 142-126 184-78-42-126-99-126-184V126c44-5 82-17 126-43Z" fill="url(#shield)"/>
+  <path d="M256 105c37 21 70 32 105 38v93c0 72-39 122-105 161-66-39-105-89-105-161v-93c35-6 68-17 105-38Z" fill="#13344f"/>
+  <path d="M256 105v292c-66-39-105-89-105-161v-93c35-6 68-17 105-38Z" fill="#1c4866" opacity=".48"/>
+  <path d="M256 106c37 20 70 31 105 37" fill="none" stroke="#d0f7ff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+  <g transform="translate(0 5)" fill="#061a2c" opacity=".5">
+    <path d="M250 245l72 72 18-18-14-14 12-12-21-21-12 12-29-29Z"/>
+    <circle cx="224" cy="211" r="49"/>
+  </g>
+  <path d="M248 240l74 74 18-18-14-14 12-12-21-21-12 12-31-31Z" fill="url(#gold)"/>
+  <circle cx="224" cy="206" r="49" fill="url(#gold)"/>
+  <circle cx="224" cy="206" r="23" fill="#153850"/>
+  <path d="M188 192a39 39 0 0 1 57-20" fill="none" stroke="#fff8de" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+</svg>

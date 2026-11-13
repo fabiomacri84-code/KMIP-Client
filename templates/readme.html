@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guida KMIP Test Client</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --line:#d9dde3; --text:#1c2430;
+          --muted:#5b6675; --accent:#1a5fb4; --ok:#1a7f37; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { background:var(--accent); color:#fff; padding:16px 24px; }
+  header h1 { margin:0; font-size:18px; font-weight:600; }
+  header a { color:#cfe3ff; text-decoration:none; margin-left:12px; font-size:13px; }
+  main { max-width:980px; margin:24px auto; padding:0 16px; }
+  section { background:var(--card); border:1px solid var(--line);
+            border-radius:10px; padding:18px 20px; margin-bottom:16px; }
+  h2 { margin:0 0 10px; font-size:15px; color:var(--accent); }
+  h3 { margin:14px 0 6px; font-size:13px; color:var(--text); }
+  p { margin:0 0 8px; }
+  ul { margin:4px 0 8px; padding-left:20px; }
+  li { margin-bottom:4px; }
+  code { background:#eef0f3; padding:1px 6px; border-radius:4px;
+         font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; }
+  pre { background:#0f1720; color:#d7e2ee; padding:12px; border-radius:8px;
+        overflow:auto; font-size:12.5px; margin:8px 0; }
+  .btn { display:inline-block; padding:7px 12px; border:1px solid var(--accent);
+         border-radius:6px; background:var(--accent); color:#fff;
+         text-decoration:none; font-size:13px; margin-right:8px; margin-bottom:8px; }
+  .btn.secondary { background:#fff; color:var(--accent); }
+  .step { display:flex; gap:10px; margin-bottom:10px; }
+  .step-num { flex:0 0 28px; width:28px; height:28px; border-radius:50%;
+              background:var(--accent); color:#fff; font-weight:700;
+              display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .warn { color:#b3261e; }
+  .ok { color:#1a7f37; }
+  .small { color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Guida KMIP Test Client — CipherTrust Manager <small style="font-size:11px;font-weight:400;opacity:.8">v{{ app_version }}</small></h1>
+  <a href="/" class="btn secondary">Torna alla Web UI</a>
+</header>
+<main>
+<section>
+<h2>Prima di iniziare</h2>
+<p>Questa prova verifica la connessione KMIP a CipherTrust Manager e il ciclo di vita di una chiave. Tieni aperte questa pagina e la console di CTM.</p>
+<p><strong>Se lavori in un sottodominio:</strong> esegui il punto 1, segui la <a href="#sottodomini">procedura manuale per i sottodomini</a>, poi continua dal punto 5. In questo percorso non si genera una CSR nell’app.</p>
+<p><strong>Se hai già CA, certificato client e chiave privata, parti dal punto 5.</strong> Se il client è già configurato e funzionante, non premere Reset client.</p>
+</section>
+<section>
+<h2>1. CTM — prepara il servizio KMIP</h2>
+<ol>
+<li>Seleziona il dominio CTM da usare per il test e mantienilo per tutta la configurazione.</li>
+<li>Apri <strong>Admin Settings → Interfaces → KMIP</strong>. Verifica che l’interfaccia sia abilitata e annota la porta, normalmente <strong>5696</strong>.</li>
+<li>Se prepari anche l’integrazione VMware vSphere, configura la ciphersuite come indicato nel riquadro seguente.</li>
+<li>Verifica che la licenza KMIP sia attiva e che l’indirizzo del server sia raggiungibile da questo computer.</li>
+<li>Se modifichi la configurazione dell’interfaccia, applica le modifiche e riavvia il servizio <strong>nae-kmip</strong> quando richiesto.</li>
+</ol>
+<p class="small">I nomi delle voci possono variare con la versione di CTM.</p>
+<h3>VMware vSphere — ciphersuite da abilitare sull’interfaccia KMIP</h3>
+<p>Per l’integrazione vSphere descritta nella guida di riferimento <code>[CTM] [KMIP] Integrazione vSphere_v1.0.docx</code>, abilita:</p>
+<pre>TLS_RSA_WITH_AES_256_CBC_SHA</pre>
+<ol>
+<li>Apri <strong>Admin Settings → Interfaces</strong>.</li>
+<li>Sull’interfaccia <strong>KMIP</strong>, apri il menu <strong>… → View/Edit</strong>.</li>
+<li>Nell’elenco <strong>Disabled cipher suites</strong>, seleziona <code>TLS_RSA_WITH_AES_256_CBC_SHA</code> e usa la freccia per spostarla tra le suite abilitate.</li>
+<li>Salva con <strong>Update</strong>.</li>
+<li>Apri <strong>Admin Settings → Services</strong>, riavvia <strong>nae-kmip</strong> e attendi che lo stato torni verde prima di riprovare la connessione.</li>
+</ol>
+<p><strong>Distinzione dal nostro client:</strong> questa app PyKMIP non richiede la suite RSA indicata e non la usa con la configurazione TLS predefinita. Mantieni abilitate anche le suite ECDHE/GCM compatibili con il client. Non limitare l’interfaccia alla sola suite indicata per vSphere.</p>
+<p>Questa nota riguarda il collegamento TLS di vSphere all’interfaccia KMIP, non l’algoritmo delle chiavi o la modalità AES usata nel test Cifra/Decifra. Il successo del test con l’app non verifica la negoziazione TLS di vSphere. Per versioni o profili TLS diversi di vSphere, verifica i requisiti della relativa integrazione.</p>
+<p class="small">Riferimenti: guida Word del progetto, sezione «Configurazione dell’interfaccia KMIP»; <a href="https://www.thalesdocs.com/ctp/cm/2.7/admin/cm_admin/interfaces/index.html" target="_blank" rel="noopener noreferrer">Thales — protocolli TLS e ciphersuite delle interfacce</a>.</p>
+</section>
+<section id="sottodomini">
+<h2>Sottodomini — profilo e registrazione manuale, senza CSR</h2>
+<p>Per questa procedura nei sottodomini, il client viene registrato manualmente su CTM. Certificato e chiave privata vengono scaricati direttamente da CTM: <strong>non usare Genera CSR nell’app e non seguire i punti 2–4 del percorso con CSR</strong>.</p>
+<ol>
+<li>Su CTM seleziona il <strong>sottodominio</strong> corretto e mantienilo per tutti i passaggi seguenti.</li>
+<li>Crea o verifica l’utente KMIP del sottodominio e aggiungilo al gruppo <strong>Key Users</strong>.</li>
+<li>Apri <strong>KMIP → Client profile</strong> e crea il profilo del client.</li>
+<li>Durante la creazione del profilo, espandi la sezione <strong>Certificate detail</strong>.</li>
+<li>Nel campo <strong>Common Name (CN)</strong> anteponi al nome dell’utente il sottodominio due volte: una barra <code>|</code> tra i due nomi del sottodominio e due barre <code>||</code> prima del nome utente:
+<pre>sottodominio|sottodominio||kmiputente</pre>
+</li>
+<li>Salva il profilo. Apri <strong>KMIP → Registered Clients → Add Client</strong> nello stesso sottodominio e registra <strong>manualmente</strong> il client usando il profilo appena creato. Per questo percorso non usare la registrazione automatica.</li>
+<li>Dalla procedura di registrazione scarica direttamente <strong>il certificato client e la relativa chiave privata</strong>. Non è necessario generare o caricare una CSR dall’app.</li>
+<li>Recupera anche la <strong>CA del server KMIP</strong>: deve permettere di verificare il certificato server di CTM. La sola CA del sottodominio che firma il client può non bastare; se necessario usa un file PEM con la Root CA e la CA intermedia.</li>
+<li>Torna all’app e continua dal <strong>punto 5</strong>, caricando CA server, certificato client e chiave privata scaricata da CTM.</li>
+<li>Se l’interfaccia richiede utente e password, nel campo <strong>Utente KMIP</strong> riporta esattamente il CN del certificato emesso, compresi tutti i separatori, e inserisci la password dell’utente.</li>
+</ol>
+<p>La notazione generale Thales è <code>&lt;domain&gt;|&lt;auth-domain&gt;||&lt;username&gt;</code>. Nel caso qui descritto l’utente è creato nello stesso sottodominio in cui lavora il client, quindi i primi due nomi coincidono. <a href="https://docs-cybersec.thalesgroup.com/bundle/latest-cdsp-cm/page/reference/kmip-ref/index.html" target="_blank" rel="noopener noreferrer">Riferimento ufficiale KMIP Thales</a>.</p>
+<p><strong>Controllo sul certificato emesso:</strong> nel certificato verificato in questo laboratorio il CN completo è <code>kmip|kmip||kmip6</code>, con due barre prima dell’utente. Nell’app deve essere riportato esattamente quel valore: non ridurlo a <code>kmip6</code> e non eliminare eventuali separatori doppi.</p>
+</section>
+<section>
+<h2>2. Percorso con CSR — genera la richiesta, se necessaria</h2>
+<ol>
+<li>Torna alla pagina del client e apri <strong>Non hai un certificato client? Genera una richiesta di firma (CSR)</strong>.</li>
+<li>Inserisci il <strong>Common Name (CN)</strong>, per esempio <code>kmipclient</code>.</li>
+<li>Premi <strong>Genera CSR</strong>. Copia l’intero testo da <code>-----BEGIN CERTIFICATE REQUEST-----</code> a <code>-----END CERTIFICATE REQUEST-----</code> dal pannello Risultato.</li>
+</ol>
+<p>La chiave privata viene creata e selezionata automaticamente: non caricarla su CTM.</p>
+<p>Se esiste già un’identità e vuoi sostituirla, <strong>Reset client</strong> in alto a destra consente di ricominciare, ma cancella anche la CA e gli altri certificati nella cartella condivisa. Non usarlo per il semplice caricamento di file esterni.</p>
+</section>
+<section>
+<h2>3. Percorso con CSR — firma il certificato e prepara l’utente</h2>
+<ol>
+<li>Apri <strong>CA → Local</strong> e seleziona la CA che userai per il client.</li>
+<li>Usa <strong>Upload CSR</strong>, incolla la richiesta e rilascia il certificato con <strong>Issue Certificate</strong>.</li>
+<li>Scarica il certificato client firmato in formato PEM.</li>
+<li>Apri <strong>Access Management → Users</strong>. Crea o verifica l’utente KMIP previsto dalla configurazione; per il test descritto usa lo stesso nome del CN, per esempio <code>kmipclient</code>.</li>
+<li>Aggiungi l’utente al gruppo <strong>Key Users</strong>.</li>
+</ol>
+</section>
+<section>
+<h2>4. Percorso con CSR — registra il client e recupera la CA del server</h2>
+<ol>
+<li>Apri <strong>KMIP → Registered Clients → Add Client</strong>.</li>
+<li>Carica il certificato client firmato e associalo all’utente KMIP. Se il client è già registrato, verifica l’associazione.</li>
+<li>Solo per il percorso con CSR nel dominio root, se l’ambiente usa già la registrazione automatica, segui la procedura configurata su CTM. Per i sottodomini descritti sopra, usa invece la registrazione manuale dedicata.</li>
+<li>Scarica in formato PEM la CA che firma il <strong>certificato server dell’interfaccia KMIP</strong>. Potrebbe essere diversa dalla CA che firma il certificato client.</li>
+</ol>
+</section>
+<section>
+<h2>5. Client — carica e seleziona i tre file</h2>
+<p>Nella sezione <strong>1. Certificati e chiave del client</strong>:</p>
+<ol>
+<li><strong>CA del server:</strong> scegli il file dal computer e premi <strong>Carica ca del server</strong>.</li>
+<li><strong>Certificato del client:</strong> scegli il certificato firmato e premi <strong>Carica certificato del client</strong>.</li>
+<li><strong>Chiave privata del client:</strong> se proviene dall’esterno, scegli la chiave PEM senza password e premi <strong>Carica chiave privata del client</strong>. Se hai generato la CSR qui, usa la chiave già creata.</li>
+<li>Controlla i tre menu <strong>File da usare</strong>: ogni file caricato viene selezionato automaticamente. Puoi anche scegliere file già presenti.</li>
+</ol>
+<p><strong>Il certificato client e la chiave privata devono appartenere alla stessa coppia.</strong> Puoi anche incollare il certificato client nella sezione espandibile dedicata, invece di caricarlo.</p>
+</section>
+<section>
+<h2>6. Client — verifica la connessione</h2>
+<ol>
+<li>Inserisci l’<strong>indirizzo del server CTM</strong> e la porta KMIP.</li>
+<li>Lascia <strong>Versione KMIP: 1.4</strong>, salvo diversa configurazione richiesta dal tuo ambiente.</li>
+<li>Compila utente e password solo se l’interfaccia CTM richiede anche queste credenziali. Per il sottodominio usa il CN completo <code>sottodominio|sottodominio||kmiputente</code>: non soltanto il nome dell’utente.</li>
+<li>Lascia disattivato <strong>Non verificare il certificato server</strong> per verificare anche la fiducia nella CA del server.</li>
+<li>Premi <strong>Verifica connessione TLS</strong>.</li>
+</ol>
+<p>Risultato atteso: <strong>OK: handshake TLS completato</strong>. Questo passaggio verifica il collegamento TLS; i permessi sulle chiavi vengono verificati dal test successivo.</p>
+</section>
+<section>
+<h2>7. Client — esegui il test completo</h2>
+<ol>
+<li>Per riconoscere la chiave su CTM, inserisci un nome nella sezione <strong>4. Operazioni singole</strong>, per esempio <code>vsphere-test-laboratorio</code>. Se lasci il nome vuoto, viene generato automaticamente.</li>
+<li>Per la prima prova lascia disattivato <strong>Revoca e distruggi la chiave alla fine del test</strong>, così puoi controllarla su CTM.</li>
+<li>Premi <strong>Avvia test completo</strong> nella sezione 3.</li>
+<li>Leggi il pannello Risultato: devono completarsi creazione, attivazione, ricerca, lettura e cifratura/decifratura.</li>
+</ol>
+<p>Risultato atteso: <strong>Integrazione KMIP OK</strong>. Conserva l’<strong>UID</strong> visualizzato per ritrovare la chiave.</p>
+</section>
+<section>
+<h2>8. CTM — verifica la chiave creata</h2>
+<ol>
+<li>Nel dominio usato per la prova, apri <strong>Keys</strong>.</li>
+<li>Cerca il nome della chiave o il suo UID.</li>
+<li>Verifica algoritmo <strong>AES</strong>, lunghezza <strong>256 bit</strong> e stato <strong>Active</strong>.</li>
+<li>Controlla che l’owner corrisponda all’utente KMIP configurato; nel caso locale descritto, per esempio <code>local|kmipclient</code>.</li>
+</ol>
+<p>Con test completo riuscito e riscontro su CTM hai verificato questo client verso CTM. La prova delle funzioni VM Encryption e vSAN va poi eseguita sull’ambiente vSphere.</p>
+</section>
+<section><h2>Operazioni singole: attivazione</h2><p>Se crei la chiave con <strong>Crea chiave</strong>, premi poi <strong>Attiva chiave</strong> con lo stesso UID prima di cifrare. Il test completo esegue già questo passaggio automaticamente.</p></section>
+<section>
+<h2>9. Pulizia della chiave di test</h2>
+<ol>
+<li>Nelle operazioni singole controlla l’UID della chiave di test.</li>
+<li>Premi <strong>Revoca chiave</strong>, poi <strong>Distruggi chiave</strong>.</li>
+<li>Per le prove successive puoi scegliere la revoca e distruzione automatica nel test completo.</li>
+</ol>
+<p>La distruzione KMIP elimina il materiale crittografico. CTM può conservare la voce e i suoi metadati con stato <strong>Destroyed</strong>.</p>
+<p><strong>Reset client non elimina le chiavi su CTM:</strong> cancella i file locali di certificati e chiavi private.</p>
+</section>
+<section>
+<h2>Se il test si ferma</h2>
+<ul>
+<li><strong>Connessione rifiutata o timeout:</strong> controlla indirizzo, porta, servizio KMIP e rete.</li>
+<li><strong>Errore di verifica certificato:</strong> controlla la CA del server e che l’indirizzo usato sia presente nel certificato server.</li>
+<li><strong>Errore TLS:</strong> controlla la coppia certificato client/chiave e la fiducia nella CA client su CTM.</li>
+<li><strong>PERMISSION_DENIED:</strong> controlla registrazione del client, utente associato, dominio e gruppo Key Users.</li>
+<li><strong>Chiave attiva non distruggibile:</strong> revoca prima la chiave.</li>
+</ul>
+<p>Se una demo fallisce dopo la creazione, una chiave può essere rimasta su CTM: cercala per nome prima di ripetere la prova.</p>
+</section>
+</main>
+
+</body>
+</html>
