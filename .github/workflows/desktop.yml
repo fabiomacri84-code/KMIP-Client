@@ -9,8 +9,27 @@ concurrency:
   group: kmip-release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  prepare:
+    name: Prepara release provvisoria
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python packaging/check_version.py
+      - name: Crea release provvisoria
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python packaging/prepare_release.py
   build:
     name: Build ${{ matrix.os }}
+    needs: prepare
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -31,34 +50,34 @@ jobs:
       - name: Test automatici
         run: python -m unittest discover -s tests -v
       - name: Build nativa e controllo eseguibile
+        timeout-minutes: 20
         run: python packaging/build.py
-      - uses: actions/upload-artifact@v7.0.2
-        with:
-          name: KMIP-Client-${{ runner.os }}
-          path: |
-            dist/KMIP-Client-v*.zip
-            dist/KMIP-Client-v*.tar.gz
-          if-no-files-found: error
-          compression-level: 0
+      - name: Carica pacchetto nella release provvisoria
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python packaging/upload_release.py
   release:
-    name: Pubblica release con tutte le build
-    needs: build
+    name: Verifica e pubblica le tre build
+    needs: [prepare, build]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: actions/download-artifact@v8.0.2
+      - uses: actions/setup-python@v7.1.0
         with:
-          path: release
-          merge-multiple: true
-      - name: Verifica i tre pacchetti e genera checksum
-        run: python packaging/release_manifest.py release
-      - name: Pubblica release
+          python-version: '3.12'
+      - name: Scarica e verifica i tre pacchetti
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "KMIP Client $GITHUB_REF_NAME" --notes-file RELEASE-NOTES.md
-          gh release upload "$GITHUB_REF_NAME" release/* --clobber
+          gh release download "$GITHUB_REF_NAME" --dir release --pattern 'KMIP-Client-v*.zip' --pattern 'KMIP-Client-v*.tar.gz'
+          python packaging/release_manifest.py release
+      - name: Pubblica release completa
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" release/SHA256SUMS.txt --clobber
           gh release edit "$GITHUB_REF_NAME" --draft=false --latest

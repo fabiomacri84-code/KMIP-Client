@@ -48,7 +48,7 @@ Il comando produce in `dist/` una cartella eseguibile e un archivio per la distr
 - Linux x86_64: archivio TAR.GZ contenente l'eseguibile e le sue librerie.
 - macOS: archivio ZIP contenente il bundle `.app`; l'architettura corrisponde al Mac usato per costruirlo. La matrice automatica usa macOS ARM64.
 
-La configurazione `.github/workflows/desktop.yml` prepara automaticamente i tre pacchetti quando viene eseguita in un repository GitHub con Actions abilitato. Si avvia manualmente da Actions o con un tag `v*`. I tag pubblicano la release soltanto dopo il completamento di tutte e tre le build e dei test; gli archivi includono il numero di versione. Le esecuzioni manuali producono artefatti per verifica, senza pubblicare release.
+La configurazione `.github/workflows/desktop.yml` prepara automaticamente i tre pacchetti quando viene eseguita in un repository GitHub con Actions abilitato. Si avvia manualmente da Actions o con un tag `v*`. I tag pubblicano la release soltanto dopo il completamento di tutte e tre le build e dei test; gli archivi includono il numero di versione. Le esecuzioni manuali eseguono test e build senza pubblicare release. Le build dei tag vengono caricate direttamente in una release provvisoria, senza usare lo spazio degli artefatti Actions; la release viene pubblicata solo se tutte riescono.
 
 I pacchetti Windows e macOS non sono firmati con certificati di distribuzione. Per una distribuzione aziendale firmata servono le credenziali di firma del rispettivo sistema. Non sono state usate o incluse credenziali del laboratorio.
 

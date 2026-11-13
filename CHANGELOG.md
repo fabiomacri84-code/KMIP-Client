@@ -2,9 +2,13 @@
 
 Il numero della versione è definito in `app_version.py` e compare in piccolo nella GUI.
 
-## 1.0.1 — 2026-11-13
+## 1.0.2 — 2026-11-13
 
-Prima distribuzione delle tre build. Aggiornato il runner macOS a macOS 15 ARM64; versione riportata nella GUI e negli archivi.
+Prima distribuzione delle tre build; caricamento diretto in release provvisoria per non dipendere dalla quota degli artefatti Actions. Pubblicazione soltanto dopo verifica di tutti i pacchetti.
+
+## 1.0.1 — 2026-11-13 (preparazione, non pubblicata)
+
+Configurazione delle tre build. Aggiornato il runner macOS a macOS 15 ARM64; versione riportata nella GUI e negli archivi.
 
 ## 1.0.0 — 2026-11-13 (baseline, non pubblicata)
 

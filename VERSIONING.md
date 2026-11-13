@@ -12,7 +12,7 @@ Per una release:
 2. Aggiorna `CHANGELOG.md` e `RELEASE-NOTES.md`.
 3. Esegui i test e registra le modifiche su `main`.
 4. Crea e invia un tag che corrisponda alla versione, per esempio `v1.0.0`.
-5. GitHub Actions verifica la corrispondenza tra tag e versione, costruisce su Windows, Linux e macOS, esegue i test e il controllo dell’eseguibile, poi pubblica i tre archivi e `SHA256SUMS.txt` nella release.
+5. GitHub Actions verifica la corrispondenza tra tag e versione, costruisce su Windows, Linux e macOS, esegue i test e il controllo dell’eseguibile, carica i pacchetti in una release provvisoria e soltanto dopo il successo delle tre build pubblica i tre archivi e `SHA256SUMS.txt` nella release.
 
 Non pubblicare certificati, chiavi private, password, token o configurazioni del laboratorio. I pacchetti vengono controllati automaticamente per escludere identità e impostazioni locali.
 

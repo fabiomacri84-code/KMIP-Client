@@ -23,7 +23,10 @@ def main():
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
                     str(root / 'packaging' / 'kmip-client.spec')], cwd=root, check=True)
     binary = root / 'dist' / 'KMIP-Test-Client' / ('kmip-test-client.exe' if sys.platform == 'win32' else 'kmip-test-client')
-    subprocess.run([str(binary), '--self-test'], check=True)
+    subprocess.run([str(binary), '--self-test'], check=True, timeout=90)
+    if sys.platform == 'darwin':
+        app_binary = root / 'dist' / 'KMIP Test Client.app' / 'Contents' / 'MacOS' / 'kmip-test-client'
+        subprocess.run([str(app_binary), '--self-test'], check=True, timeout=90)
     shutil.copy2(root / 'APP-DESKTOP.md', binary.parent / 'LEGGIMI.md')
     (binary.parent / 'VERSION.txt').write_text(__version__ + '\n', encoding='ascii')
     check_release(binary.parent)
