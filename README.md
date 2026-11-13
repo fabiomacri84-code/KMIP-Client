@@ -1,10 +1,16 @@
 # KMIP-Client — integrazione con CipherTrust Manager
 
+**Italiano** · [English documentation](README.en.md)
+
 Applicazione desktop in italiano per test KMIP verso Thales CipherTrust Manager (CTM).
 
 [![Build desktop](https://github.com/fabiomacri84-code/KMIP-Client/actions/workflows/desktop.yml/badge.svg)](https://github.com/fabiomacri84-code/KMIP-Client/actions/workflows/desktop.yml)
 
 [Scarica le build Windows, Linux e macOS](https://github.com/fabiomacri84-code/KMIP-Client/releases/latest) · [Guida desktop](APP-DESKTOP.md) · [Versioni](CHANGELOG.md)
+
+## English documentation
+
+An English overview, user guide and native build instructions are available in [README.en.md](README.en.md) and [docs/en](docs/en). The application interface remains in Italian.
 
 ## Applicazione desktop
 

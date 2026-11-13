@@ -11,3 +11,12 @@ La versione compare in piccolo nella GUI. Le nuove installazioni non includono c
 La guida inclusa descrive il percorso manuale nei sottodomini, il CN `sottodominio|sottodominio||kmiputente` e la ciphersuite `TLS_RSA_WITH_AES_256_CBC_SHA` prevista dalla guida vSphere di riferimento. L’app PyKMIP non richiede quella suite con la configurazione TLS predefinita.
 
 Le build Windows e macOS non sono firmate con certificati di distribuzione. La build Linux richiede un desktop x86_64 con glibc >= 2.36 e le normali librerie grafiche di sistema. Per tutti i dettagli consulta `APP-DESKTOP.md` e `CHANGELOG.md` nel repository.
+
+
+---
+
+## English
+
+KMIP-Client is a desktop application for testing integration with Thales CipherTrust Manager. Extract the archive for your platform and launch `kmip-test-client.exe` (Windows x64), `kmip-test-client` (Linux x64), or `KMIP Test Client.app` (macOS Apple Silicon / ARM64). Keep the complete extracted directory. Python and Podman are not required to run it.
+
+The UI is in Italian; an [English user guide](https://github.com/fabiomacri84-code/KMIP-Client/blob/main/README.en.md) is available in the repository. New installations contain no client certificates, private keys or laboratory settings. The version is visible in the GUI. Windows/macOS binaries are not distribution-signed; Linux requires a modern glibc-based desktop and the normal graphics libraries.
